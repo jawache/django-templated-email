@@ -85,11 +85,22 @@ class TemplateBackend:
                 else:
                     plain_part = None
 
+            try:
+                subject_part = get_template('%s.sub' % prefixed_template_name)
+            except TemplateDoesNotExist:
+                if not subject_part:
+                    raise TemplateDoesNotExist('%s.sub' % prefixed_template_name)
+                else:
+                    subject_part = None
+
             if plain_part:
                 response['plain'] = plain_part.render(render_context)
 
             if html_part:
                 response['html'] = html_part.render(render_context)
+
+            if subject_part:
+                response['subject'] = subject_part.render(render_context)
 
         if response == {}:
             raise EmailRenderException("Couldn't render email parts. Errors: %s" % errors)
@@ -112,15 +123,16 @@ class TemplateBackend:
         parts = self._render_email(template_name, context, template_dir, file_extension)
         plain_part = parts.has_key('plain')
         html_part = parts.has_key('html')
+        subject = parts.has_key('subject')
 
-        subject = parts.get('subject',
-                    getattr(
-                        settings,'TEMPLATED_EMAIL_DJANGO_SUBJECTS',{}
-                    ).get(
-                        template_name,
-                        _('%s email subject' % template_name)
-                    ) % context
-                )
+#        subject = parts.get('subject',
+#                    getattr(
+#                        settings,'TEMPLATED_EMAIL_DJANGO_SUBJECTS',{}
+#                    ).get(
+#                        template_name,
+#                        _('%s email subject' % template_name)
+#                    ) % context
+#                )
         
         if plain_part and not html_part:
             e=EmailMessage(
